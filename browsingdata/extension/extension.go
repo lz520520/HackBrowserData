@@ -8,8 +8,8 @@ import (
 	"github.com/tidwall/gjson"
 	"golang.org/x/text/language"
 
-	"github.com/moond4rk/hackbrowserdata/item"
-	"github.com/moond4rk/hackbrowserdata/utils/fileutil"
+	"tests/item"
+	"tests/utils/fileutil"
 )
 
 type ChromiumExtension []*extension

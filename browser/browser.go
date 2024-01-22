@@ -6,11 +6,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/moond4rk/hackbrowserdata/browser/chromium"
-	"github.com/moond4rk/hackbrowserdata/browser/firefox"
-	"github.com/moond4rk/hackbrowserdata/browsingdata"
-	"github.com/moond4rk/hackbrowserdata/utils/fileutil"
-	"github.com/moond4rk/hackbrowserdata/utils/typeutil"
+	"tests/browser/chromium"
+	"tests/browser/firefox"
+	"tests/browsingdata"
+	"tests/utils/fileutil"
+	"tests/utils/typeutil"
 )
 
 type Browser interface {

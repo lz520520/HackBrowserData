@@ -13,9 +13,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/tidwall/gjson"
 
-	"github.com/moond4rk/hackbrowserdata/crypto"
-	"github.com/moond4rk/hackbrowserdata/item"
-	"github.com/moond4rk/hackbrowserdata/utils/typeutil"
+	"tests/crypto"
+	"tests/item"
+	"tests/utils/typeutil"
 )
 
 type ChromiumPassword []loginData

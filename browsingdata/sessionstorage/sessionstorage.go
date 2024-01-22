@@ -12,9 +12,9 @@ import (
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 
-	"github.com/moond4rk/hackbrowserdata/item"
-	"github.com/moond4rk/hackbrowserdata/utils/byteutil"
-	"github.com/moond4rk/hackbrowserdata/utils/typeutil"
+	"tests/item"
+	"tests/utils/byteutil"
+	"tests/utils/typeutil"
 )
 
 type ChromiumSessionStorage []session

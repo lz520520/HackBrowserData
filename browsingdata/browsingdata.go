@@ -1,19 +1,20 @@
 package browsingdata
 
 import (
+	"archive/zip"
 	"log/slog"
 
-	"github.com/moond4rk/hackbrowserdata/browsingdata/bookmark"
-	"github.com/moond4rk/hackbrowserdata/browsingdata/cookie"
-	"github.com/moond4rk/hackbrowserdata/browsingdata/creditcard"
-	"github.com/moond4rk/hackbrowserdata/browsingdata/download"
-	"github.com/moond4rk/hackbrowserdata/browsingdata/extension"
-	"github.com/moond4rk/hackbrowserdata/browsingdata/history"
-	"github.com/moond4rk/hackbrowserdata/browsingdata/localstorage"
-	"github.com/moond4rk/hackbrowserdata/browsingdata/password"
-	"github.com/moond4rk/hackbrowserdata/browsingdata/sessionstorage"
-	"github.com/moond4rk/hackbrowserdata/item"
-	"github.com/moond4rk/hackbrowserdata/utils/fileutil"
+	"tests/browsingdata/bookmark"
+	"tests/browsingdata/cookie"
+	"tests/browsingdata/creditcard"
+	"tests/browsingdata/download"
+	"tests/browsingdata/extension"
+	"tests/browsingdata/history"
+	"tests/browsingdata/localstorage"
+	"tests/browsingdata/password"
+	"tests/browsingdata/sessionstorage"
+	"tests/item"
+	"tests/utils/fileutil"
 )
 
 type Data struct {
@@ -46,7 +47,7 @@ func (d *Data) Recovery(masterKey []byte) error {
 	return nil
 }
 
-func (d *Data) Output(dir, browserName, flag string) {
+func (d *Data) Output(zw *zip.Writer, dir, browserName, flag string) {
 	output := newOutPutter(flag)
 
 	for _, source := range d.sources {
@@ -55,8 +56,7 @@ func (d *Data) Output(dir, browserName, flag string) {
 			continue
 		}
 		filename := fileutil.ItemName(browserName, source.Name(), output.Ext())
-
-		f, err := output.CreateFile(dir, filename)
+		f, err := zw.Create(filename)
 		if err != nil {
 			slog.Error("create file error", "filename", filename, "err", err.Error())
 			continue
@@ -65,10 +65,7 @@ func (d *Data) Output(dir, browserName, flag string) {
 			slog.Error("write to file error", "filename", filename, "err", err.Error())
 			continue
 		}
-		if err := f.Close(); err != nil {
-			slog.Error("close file error", "filename", filename, "err", err.Error())
-			continue
-		}
+		zw.Flush()
 		slog.Warn("export success", "filename", filename)
 	}
 }
