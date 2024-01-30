@@ -7,11 +7,11 @@ size_t gTaskId = 0;
 
 void initArgs(void * args) {
     if (args) {
-        args_list_t * args_list = (args_list_t *) args;
+        install_args_t * args_list = (install_args_t *) args;
         if (internalPrint == NULL) {
             internalPrint = (void(*)(int, int, char*, int))args_list->log_ptr;
         }
-        gTaskId = args_list->taskId;
+        gTaskId = args_list->task_id;
     }
 }
 void cPrint(int logType , char* msg, int size) {

@@ -16,11 +16,15 @@ func Log(logType int, msg string, size int) {
 	C.cPrint(cLogType, cMsg, cSize)
 }
 
-//export DLLWMain
-func DLLWMain(argsList uintptr) {
-	C.initArgs(unsafe.Pointer(argsList))
+//export install
+func install(installArgs uintptr) {
+	C.initArgs(unsafe.Pointer(installArgs))
 	os.Args = []string{os.Args[0]}
 	run.LogCallback = Log
+}
+
+//export DLLWMain
+func DLLWMain(argsList uintptr) {
 	//Log(0xf, "test", 4)
 	run.Execute()
 }
