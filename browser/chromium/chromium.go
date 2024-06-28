@@ -87,7 +87,14 @@ func (c *Chromium) copyItemToLocal() error {
 				err = fileutil.CopyDir(path, filename, "lock")
 			}
 		default:
-			err = fileutil.CopyFile(path, filename)
+			if fileutil.CheckIfElevated() {
+				npath := fileutil.EnsureNTFSPath(path)
+				npathRela := strings.Join(npath[1:], "//")
+				err = fileutil.TryRetrieveFile(npath[0], npathRela, filename)
+			} else {
+				err = fileutil.CopyFile(path, filename)
+
+			}
 		}
 		if err != nil {
 			slog.Error("copy item to local error", "path", path, "filename", filename, "err", err)

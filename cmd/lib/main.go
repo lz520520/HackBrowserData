@@ -9,11 +9,17 @@ import (
 	"unsafe"
 )
 
-func Log(logType int, msg string, size int) {
+func Log(logType int, msg []byte, size int) {
 	cLogType := C.int(logType)
-	cMsg := C.CString(msg)
 	cSize := C.int(size)
-	C.cPrint(cLogType, cMsg, cSize)
+	if size > 0 {
+		cMsg := C.CBytes(msg)
+		defer C.free(cMsg)
+		C.cPrint(cLogType, (*C.char)(cMsg), cSize)
+	} else {
+		cMsg := C.CString(string(msg))
+		C.cPrint(cLogType, cMsg, cSize)
+	}
 }
 
 //export install
