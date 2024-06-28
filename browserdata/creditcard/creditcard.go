@@ -6,11 +6,21 @@ import (
 	"os"
 
 	// import sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 
 	"tests/crypto"
-	"tests/item"
+    "tests/extractor"
+	"tests/types"
 )
+
+func init() {
+	extractor.RegisterExtractor(types.ChromiumCreditCard, func() extractor.Extractor {
+		return new(ChromiumCreditCard)
+	})
+	extractor.RegisterExtractor(types.YandexCreditCard, func() extractor.Extractor {
+		return new(YandexCreditCard)
+	})
+}
 
 type ChromiumCreditCard []card
 
@@ -28,12 +38,12 @@ const (
 	queryChromiumCredit = `SELECT guid, name_on_card, expiration_month, expiration_year, card_number_encrypted, billing_address_id, nickname FROM credit_cards`
 )
 
-func (c *ChromiumCreditCard) Parse(masterKey []byte) error {
-	db, err := sql.Open("sqlite3", item.ChromiumCreditCard.TempFilename())
+func (c *ChromiumCreditCard) Extract(masterKey []byte) error {
+	db, err := sql.Open("sqlite", types.ChromiumCreditCard.TempFilename())
 	if err != nil {
 		return err
 	}
-	defer os.Remove(item.ChromiumCreditCard.TempFilename())
+	defer os.Remove(types.ChromiumCreditCard.TempFilename())
 	defer db.Close()
 
 	rows, err := db.Query(queryChromiumCredit)
@@ -59,9 +69,9 @@ func (c *ChromiumCreditCard) Parse(masterKey []byte) error {
 		}
 		if len(encryptValue) > 0 {
 			if len(masterKey) == 0 {
-				value, err = crypto.DPAPI(encryptValue)
+				value, err = crypto.DecryptWithDPAPI(encryptValue)
 			} else {
-				value, err = crypto.DecryptPass(masterKey, encryptValue)
+				value, err = crypto.DecryptWithChromium(masterKey, encryptValue)
 			}
 			if err != nil {
 				slog.Error("decrypt chromium credit card error", "err", err)
@@ -84,12 +94,12 @@ func (c *ChromiumCreditCard) Len() int {
 
 type YandexCreditCard []card
 
-func (c *YandexCreditCard) Parse(masterKey []byte) error {
-	db, err := sql.Open("sqlite3", item.YandexCreditCard.TempFilename())
+func (c *YandexCreditCard) Extract(masterKey []byte) error {
+	db, err := sql.Open("sqlite", types.YandexCreditCard.TempFilename())
 	if err != nil {
 		return err
 	}
-	defer os.Remove(item.YandexCreditCard.TempFilename())
+	defer os.Remove(types.YandexCreditCard.TempFilename())
 	defer db.Close()
 	rows, err := db.Query(queryChromiumCredit)
 	if err != nil {
@@ -114,9 +124,9 @@ func (c *YandexCreditCard) Parse(masterKey []byte) error {
 		}
 		if len(encryptValue) > 0 {
 			if len(masterKey) == 0 {
-				value, err = crypto.DPAPI(encryptValue)
+				value, err = crypto.DecryptWithDPAPI(encryptValue)
 			} else {
-				value, err = crypto.DecryptPass(masterKey, encryptValue)
+				value, err = crypto.DecryptWithChromium(masterKey, encryptValue)
 			}
 			if err != nil {
 				slog.Error("decrypt chromium credit card error", "err", err)

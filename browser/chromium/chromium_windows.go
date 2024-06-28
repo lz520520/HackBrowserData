@@ -11,18 +11,18 @@ import (
 	"github.com/tidwall/gjson"
 
 	"tests/crypto"
-	"tests/item"
+	"tests/types"
 	"tests/utils/fileutil"
 )
 
 var errDecodeMasterKeyFailed = errors.New("decode master key failed")
 
 func (c *Chromium) GetMasterKey() ([]byte, error) {
-	b, err := fileutil.ReadFile(item.ChromiumKey.TempFilename())
+	b, err := fileutil.ReadFile(types.ChromiumKey.TempFilename())
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(item.ChromiumKey.TempFilename())
+	defer os.Remove(types.ChromiumKey.TempFilename())
 
 	encryptedKey := gjson.Get(b, "os_crypt.encrypted_key")
 	if !encryptedKey.Exists() {
@@ -33,7 +33,7 @@ func (c *Chromium) GetMasterKey() ([]byte, error) {
 	if err != nil {
 		return nil, errDecodeMasterKeyFailed
 	}
-	c.masterKey, err = crypto.DPAPI(key[5:])
+	c.masterKey, err = crypto.DecryptWithDPAPI(key[5:])
 	if err != nil {
 		slog.Error("decrypt master key failed", "err", err)
 		return nil, err

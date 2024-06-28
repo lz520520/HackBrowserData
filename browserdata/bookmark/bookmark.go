@@ -7,14 +7,23 @@ import (
 	"sort"
 	"time"
 
-	// import sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/tidwall/gjson"
+	_ "modernc.org/sqlite" // import sqlite3 driver
 
-	"tests/item"
+    "tests/extractor"
+	"tests/types"
 	"tests/utils/fileutil"
 	"tests/utils/typeutil"
 )
+
+func init() {
+	extractor.RegisterExtractor(types.ChromiumBookmark, func() extractor.Extractor {
+		return new(ChromiumBookmark)
+	})
+	extractor.RegisterExtractor(types.FirefoxBookmark, func() extractor.Extractor {
+		return new(FirefoxBookmark)
+	})
+}
 
 type ChromiumBookmark []bookmark
 
@@ -26,12 +35,12 @@ type bookmark struct {
 	DateAdded time.Time
 }
 
-func (c *ChromiumBookmark) Parse(_ []byte) error {
-	bookmarks, err := fileutil.ReadFile(item.ChromiumBookmark.TempFilename())
+func (c *ChromiumBookmark) Extract(_ []byte) error {
+	bookmarks, err := fileutil.ReadFile(types.ChromiumBookmark.TempFilename())
 	if err != nil {
 		return err
 	}
-	defer os.Remove(item.ChromiumBookmark.TempFilename())
+	defer os.Remove(types.ChromiumBookmark.TempFilename())
 	r := gjson.Parse(bookmarks)
 	if r.Exists() {
 		roots := r.Get("roots")
@@ -93,12 +102,12 @@ const (
 	closeJournalMode     = `PRAGMA journal_mode=off`
 )
 
-func (f *FirefoxBookmark) Parse(_ []byte) error {
-	db, err := sql.Open("sqlite3", item.FirefoxBookmark.TempFilename())
+func (f *FirefoxBookmark) Extract(_ []byte) error {
+	db, err := sql.Open("sqlite", types.FirefoxBookmark.TempFilename())
 	if err != nil {
 		return err
 	}
-	defer os.Remove(item.FirefoxBookmark.TempFilename())
+	defer os.Remove(types.FirefoxBookmark.TempFilename())
 	defer db.Close()
 	_, err = db.Exec(closeJournalMode)
 	if err != nil {

@@ -12,9 +12,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"golang.org/x/crypto/pbkdf2"
-
-	"tests/item"
+	"tests/types"
+	"tests/utils/cryptoutil"
 )
 
 var (
@@ -24,7 +23,7 @@ var (
 
 func (c *Chromium) GetMasterKey() ([]byte, error) {
 	// don't need chromium key file for macOS
-	defer os.Remove(item.ChromiumKey.TempFilename())
+	defer os.Remove(types.ChromiumKey.TempFilename())
 	// Get the master key from the keychain
 	// $ security find-generic-password -wa 'Chrome'
 	var (
@@ -50,7 +49,7 @@ func (c *Chromium) GetMasterKey() ([]byte, error) {
 	}
 	salt := []byte("saltysalt")
 	// @https://source.chromium.org/chromium/chromium/src/+/master:components/os_crypt/os_crypt_mac.mm;l=157
-	key := pbkdf2.Key(secret, salt, 1003, 16, sha1.New)
+	key := cryptoutil.PBKDF2Key(secret, salt, 1003, 16, sha1.New)
 	if key == nil {
 		return nil, errWrongSecurityCommand
 	}

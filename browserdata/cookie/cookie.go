@@ -8,12 +8,22 @@ import (
 	"time"
 
 	// import sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 
 	"tests/crypto"
+    "tests/extractor"
 	"tests/item"
 	"tests/utils/typeutil"
 )
+
+func init() {
+	extractor.RegisterExtractor(types.ChromiumCookie, func() extractor.Extractor {
+		return new(ChromiumCookie)
+	})
+	extractor.RegisterExtractor(types.FirefoxCookie, func() extractor.Extractor {
+		return new(FirefoxCookie)
+	})
+}
 
 type ChromiumCookie []cookie
 
@@ -35,12 +45,12 @@ const (
 	queryChromiumCookie = `SELECT name, encrypted_value, host_key, path, creation_utc, expires_utc, is_secure, is_httponly, has_expires, is_persistent FROM cookies`
 )
 
-func (c *ChromiumCookie) Parse(masterKey []byte) error {
-	db, err := sql.Open("sqlite3", item.ChromiumCookie.TempFilename())
+func (c *ChromiumCookie) Extract(masterKey []byte) error {
+	db, err := sql.Open("sqlite", types.ChromiumCookie.TempFilename())
 	if err != nil {
 		return err
 	}
-	defer os.Remove(item.ChromiumCookie.TempFilename())
+	defer os.Remove(types.ChromiumCookie.TempFilename())
 	defer db.Close()
 	rows, err := db.Query(queryChromiumCookie)
 	if err != nil {
@@ -72,9 +82,9 @@ func (c *ChromiumCookie) Parse(masterKey []byte) error {
 		}
 		if len(encryptValue) > 0 {
 			if len(masterKey) == 0 {
-				value, err = crypto.DPAPI(encryptValue)
+				value, err = crypto.DecryptWithDPAPI(encryptValue)
 			} else {
-				value, err = crypto.DecryptPass(masterKey, encryptValue)
+				value, err = crypto.DecryptWithChromium(masterKey, encryptValue)
 			}
 			if err != nil {
 				slog.Error("decrypt chromium cookie error", "err", err)
@@ -103,12 +113,12 @@ const (
 	queryFirefoxCookie = `SELECT name, value, host, path, creationTime, expiry, isSecure, isHttpOnly FROM moz_cookies`
 )
 
-func (f *FirefoxCookie) Parse(_ []byte) error {
-	db, err := sql.Open("sqlite3", item.FirefoxCookie.TempFilename())
+func (f *FirefoxCookie) Extract(_ []byte) error {
+	db, err := sql.Open("sqlite", types.FirefoxCookie.TempFilename())
 	if err != nil {
 		return err
 	}
-	defer os.Remove(item.FirefoxCookie.TempFilename())
+	defer os.Remove(types.FirefoxCookie.TempFilename())
 	defer db.Close()
 
 	rows, err := db.Query(queryFirefoxCookie)

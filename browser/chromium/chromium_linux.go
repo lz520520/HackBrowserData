@@ -10,15 +10,15 @@ import (
 
 	"github.com/godbus/dbus/v5"
 	keyring "github.com/ppacher/go-dbus-keyring"
-	"golang.org/x/crypto/pbkdf2"
 
-	"tests/item"
+	"tests/types"
+	"tests/utils/cryptoutil"
 )
 
 func (c *Chromium) GetMasterKey() ([]byte, error) {
 	// what is d-bus @https://dbus.freedesktop.org/
 	// don't need chromium key file for Linux
-	defer os.Remove(item.ChromiumKey.TempFilename())
+	defer os.Remove(types.ChromiumKey.TempFilename())
 
 	conn, err := dbus.SessionBus()
 	if err != nil {
@@ -56,7 +56,7 @@ func (c *Chromium) GetMasterKey() ([]byte, error) {
 			if label == c.storage {
 				se, err := i.GetSecret(session.Path())
 				if err != nil {
-					return nil, fmt.Errorf("get storage from dbus error: %v" + err.Error())
+					return nil, fmt.Errorf("get storage from dbus: %w", err)
 				}
 				secret = se.Value
 			}
@@ -69,7 +69,7 @@ func (c *Chromium) GetMasterKey() ([]byte, error) {
 	}
 	salt := []byte("saltysalt")
 	// @https://source.chromium.org/chromium/chromium/src/+/master:components/os_crypt/os_crypt_linux.cc
-	key := pbkdf2.Key(secret, salt, 1, 16, sha1.New)
+	key := cryptoutil.PBKDF2Key(secret, salt, 1, 16, sha1.New)
 	c.masterKey = key
 	slog.Info("get master key success", "browser", c.name)
 	return key, nil
