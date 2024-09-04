@@ -3,10 +3,10 @@ package chromium
 import (
     "fmt"
     "io/fs"
-    "log/slog"
     "path/filepath"
     "strings"
     "tests/browserdata"
+    "tests/logger"
 
     "tests/types"
     "tests/utils/fileutil"
@@ -50,7 +50,7 @@ func (c *Chromium) Name() string {
     return c.name
 }
 
-func (c *Chromium) BrowsingData(isFullExport bool) (*browserdata.BrowserData, error) {
+func (c *Chromium) BrowsingData(isFullExport bool, masterkey []byte) (*browserdata.BrowserData, error) {
     items := c.dataTypes
     if !isFullExport {
         items = types.FilterSensitiveItems(c.dataTypes)
@@ -61,13 +61,16 @@ func (c *Chromium) BrowsingData(isFullExport bool) (*browserdata.BrowserData, er
     if err := c.copyItemToLocal(); err != nil {
         return nil, err
     }
-
-    masterKey, err := c.GetMasterKey()
-    if err != nil {
-        return nil, err
+    if masterkey != nil {
+        c.masterKey = masterkey
+    } else {
+        masterKey, err := c.GetMasterKey()
+        if err != nil {
+            return nil, err
+        }
+        c.masterKey = masterKey
     }
 
-    c.masterKey = masterKey
     if err := data.Recovery(c.masterKey); err != nil {
         return nil, err
     }
@@ -88,17 +91,22 @@ func (c *Chromium) copyItemToLocal() error {
                 err = fileutil.CopyDir(path, filename, "lock")
             }
         default:
-            if fileutil.CheckIfElevated() {
+            err = fileutil.CopyFile(path, filename)
+            if err != nil && fileutil.CheckIfElevated() {
                 npath := fileutil.EnsureNTFSPath(path)
                 npathRela := strings.Join(npath[1:], "//")
                 err = fileutil.TryRetrieveFile(npath[0], npathRela, filename)
-            } else {
-                err = fileutil.CopyFile(path, filename)
-
             }
+            //if fileutil.CheckIfElevated() {
+            //   npath := fileutil.EnsureNTFSPath(path)
+            //   npathRela := strings.Join(npath[1:], "//")
+            //   err = fileutil.TryRetrieveFile(npath[0], npathRela, filename)
+            //} else {
+            //    err = fileutil.CopyFile(path, filename)
+            //}
         }
         if err != nil {
-            slog.Error("copy item to local error", "path", path, "filename", filename, "err", err)
+            logger.Error("copy item to local error", "path", path, "filename", filename, "err", err)
             continue
         }
     }

@@ -2,9 +2,9 @@ package cookie
 
 import (
     "database/sql"
-    "log/slog"
     "os"
     "sort"
+    "tests/logger"
     "time"
 
     // import sqlite3 driver
@@ -65,7 +65,7 @@ func (c *ChromiumCookie) Extract(masterKey []byte) error {
             value, encryptValue                           []byte
         )
         if err = rows.Scan(&key, &encryptValue, &host, &path, &createDate, &expireDate, &isSecure, &isHTTPOnly, &hasExpire, &isPersistent); err != nil {
-            slog.Error("scan chromium cookie error", "err", err)
+            logger.Error("scan chromium cookie error", "err", err)
         }
 
         cookie := cookie{
@@ -87,7 +87,7 @@ func (c *ChromiumCookie) Extract(masterKey []byte) error {
                 value, err = crypto.DecryptWithChromium(masterKey, encryptValue)
             }
             if err != nil {
-                slog.Error("decrypt chromium cookie error", "err", err)
+                logger.Error("decrypt chromium cookie error", "err", err)
             }
         }
         cookie.Value = string(value)
@@ -133,7 +133,7 @@ func (f *FirefoxCookie) Extract(_ []byte) error {
             creationTime, expiry    int64
         )
         if err = rows.Scan(&name, &value, &host, &path, &creationTime, &expiry, &isSecure, &isHTTPOnly); err != nil {
-            slog.Error("scan firefox cookie error", "err", err)
+            logger.Error("scan firefox cookie error", "err", err)
         }
         *f = append(*f, cookie{
             KeyName:    name,

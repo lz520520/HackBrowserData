@@ -2,7 +2,7 @@ package browserdata
 
 import (
     "archive/zip"
-    "log/slog"
+    "tests/logger"
 
     "tests/extractor"
     "tests/types"
@@ -24,7 +24,7 @@ func New(items []types.DataType) *BrowserData {
 func (d *BrowserData) Recovery(masterKey []byte) error {
     for _, source := range d.extractors {
         if err := source.Extract(masterKey); err != nil {
-            slog.Error("parse error", "source_data", source.Name(), "err", err.Error())
+            logger.Error("parse error", "source_data", source.Name(), "err", err.Error())
             continue
         }
     }
@@ -43,15 +43,15 @@ func (d *BrowserData) Output(zw *zip.Writer, dir, browserName, flag string) {
 
         f, err := zw.Create(filename)
         if err != nil {
-            slog.Error("create file error", "filename", filename, "err", err.Error())
+            logger.Error("create file error", "filename", filename, "err", err.Error())
             continue
         }
         if err := output.Write(source, f); err != nil {
-            slog.Error("write to file error", "filename", filename, "err", err.Error())
+            logger.Error("write to file error", "filename", filename, "err", err.Error())
             continue
         }
         zw.Flush()
-        slog.Warn("export success", "filename", filename)
+        logger.Warn("export success", "filename", filename)
     }
 }
 
@@ -60,7 +60,7 @@ func (d *BrowserData) addExtractors(items []types.DataType) {
         if source := extractor.CreateExtractor(itemType); source != nil {
             d.extractors[itemType] = source
         } else {
-            slog.Debug("source not found", "source", itemType)
+            logger.Debug("source not found", "source", itemType)
         }
     }
 }
