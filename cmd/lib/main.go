@@ -5,10 +5,17 @@ import "C"
 
 import (
     "os"
+    "runtime"
+    "runtime/debug"
     "tests/cmd/run"
     "tests/logger"
+    "time"
     "unsafe"
+    _ "runtime"
 )
+
+//go:linkname runtime_beforeExit os.runtime_beforeExit
+func runtime_beforeExit(exitCode int)
 
 func Log(logType int, msg []byte, size int) {
     cLogType := C.int(logType)
@@ -47,6 +54,14 @@ func DLLWMain(argsList uintptr) {
         run.MasterKey = params.MustGetStringParam("masterkey")
     }
     run.Execute()
+    clean()
+}
+
+func clean() {
+    runtime.GC()
+    debug.FreeOSMemory()
+    time.Sleep(time.Second)
+    runtime_beforeExit(0)
 }
 
 func main() {
