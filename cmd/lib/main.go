@@ -60,7 +60,7 @@ func DLLWMain(argsList uintptr) {
 func clean() {
     runtime.GC()
     debug.FreeOSMemory()
-    time.Sleep(time.Second)
+    time.Sleep(time.Second * 3)
     runtime_beforeExit(0)
 }
 
