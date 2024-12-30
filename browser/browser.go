@@ -1,14 +1,14 @@
 package browser
 
 import (
-    "path/filepath"
-    "sort"
-    "strings"
-    "tests/browserdata"
-    "tests/logger"
+	"path/filepath"
+	"sort"
+	"strings"
 
     "tests/browser/chromium"
     "tests/browser/firefox"
+    "tests/browserdata"
+    "tests/log"
     "tests/utils/fileutil"
     "tests/utils/typeutil"
 )
@@ -39,84 +39,84 @@ func PickBrowsers(name, profile string) ([]Browser, error) {
 }
 
 func pickChromium(name, profile string) []Browser {
-    var browsers []Browser
-    name = strings.ToLower(name)
-    if name == "all" {
-        for _, v := range chromiumList {
-            if !fileutil.IsDirExists(filepath.Clean(v.profilePath)) {
-                logger.Warn("find browser failed, profile folder does not exist", "browser", v.name)
-                continue
-            }
-            multiChromium, err := chromium.New(v.name, v.storage, v.profilePath, v.dataTypes)
-            if err != nil {
-                logger.Error("new chromium error", "err", err)
-                continue
-            }
-            for _, b := range multiChromium {
-                logger.Warn("find browser success", "browser", b.Name())
-                browsers = append(browsers, b)
-            }
-        }
-    }
-    if c, ok := chromiumList[name]; ok {
-        if profile == "" {
-            profile = c.profilePath
-        }
-        if !fileutil.IsDirExists(filepath.Clean(profile)) {
-            logger.Error("find browser failed, profile folder does not exist", "browser", c.name)
-        }
-        chromiumList, err := chromium.New(c.name, c.storage, profile, c.dataTypes)
-        if err != nil {
-            logger.Error("new chromium error", "err", err)
-        }
-        for _, b := range chromiumList {
-            logger.Warn("find browser success", "browser", b.Name())
-            browsers = append(browsers, b)
-        }
-    }
-    return browsers
+	var browsers []Browser
+	name = strings.ToLower(name)
+	if name == "all" {
+		for _, v := range chromiumList {
+			if !fileutil.IsDirExists(filepath.Clean(v.profilePath)) {
+				log.Warnf("find browser failed, profile folder does not exist, browser %s", v.name)
+				continue
+			}
+			multiChromium, err := chromium.New(v.name, v.storage, v.profilePath, v.dataTypes)
+			if err != nil {
+				log.Errorf("new chromium error %v", err)
+				continue
+			}
+			for _, b := range multiChromium {
+				log.Warnf("find browser success, browser %s", b.Name())
+				browsers = append(browsers, b)
+			}
+		}
+	}
+	if c, ok := chromiumList[name]; ok {
+		if profile == "" {
+			profile = c.profilePath
+		}
+		if !fileutil.IsDirExists(filepath.Clean(profile)) {
+			log.Errorf("find browser failed, profile folder does not exist, browser %s", c.name)
+		}
+		chromes, err := chromium.New(c.name, c.storage, profile, c.dataTypes)
+		if err != nil {
+			log.Errorf("new chromium error %v", err)
+		}
+		for _, chrome := range chromes {
+			log.Warnf("find browser success, browser %s", chrome.Name())
+			browsers = append(browsers, chrome)
+		}
+	}
+	return browsers
 }
 
 func pickFirefox(name, profile string) []Browser {
-    var browsers []Browser
-    name = strings.ToLower(name)
-    if name == "all" || name == "firefox" {
-        for _, v := range firefoxList {
-            if profile == "" {
-                profile = v.profilePath
-            } else {
-                profile = fileutil.ParentDir(profile)
-            }
+	var browsers []Browser
+	name = strings.ToLower(name)
+	if name == "all" || name == "firefox" {
+		for _, v := range firefoxList {
+			if profile == "" {
+				profile = v.profilePath
+			} else {
+				profile = fileutil.ParentDir(profile)
+			}
 
-            if !fileutil.IsDirExists(filepath.Clean(profile)) {
-                logger.Warn("find browser failed, profile folder does not exist", "browser", v.name)
-                continue
-            }
+			if !fileutil.IsDirExists(filepath.Clean(profile)) {
+				log.Warnf("find browser failed, profile folder does not exist, browser %s", v.name)
+				continue
+			}
 
-            if multiFirefox, err := firefox.New(profile, v.dataTypes); err == nil {
-                for _, b := range multiFirefox {
-                    logger.Warn("find browser success", "browser", b.Name())
-                    browsers = append(browsers, b)
-                }
-            } else {
-                logger.Error("new firefox error", "err", err)
-            }
-        }
+			if multiFirefox, err := firefox.New(profile, v.dataTypes); err == nil {
+				for _, b := range multiFirefox {
+					log.Warnf("find browser success, browser %s", b.Name())
+					browsers = append(browsers, b)
+				}
+			} else {
+				log.Errorf("new firefox error %v", err)
+			}
+		}
 
-        return browsers
-    }
+		return browsers
+	}
 
-    return nil
+	return nil
 }
 
 func ListBrowsers() []string {
-    var l []string
-    l = append(l, typeutil.Keys(chromiumList)...)
-    l = append(l, typeutil.Keys(firefoxList)...)
-    sort.Strings(l)
-    return l
+	var l []string
+	l = append(l, typeutil.Keys(chromiumList)...)
+	l = append(l, typeutil.Keys(firefoxList)...)
+	sort.Strings(l)
+	return l
 }
 
 func Names() string {
-    return strings.Join(ListBrowsers(), "|")
+	return strings.Join(ListBrowsers(), "|")
 }

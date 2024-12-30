@@ -206,6 +206,8 @@ hack-browser-data
 # CICD Config
 !.typos.toml
 !.github/*.yml
+!log/
+examples/*.go
 
 
 out/
