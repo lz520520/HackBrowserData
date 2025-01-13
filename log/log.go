@@ -1,46 +1,52 @@
 package log
 
 import (
-	"github.com/moond4rk/hackbrowserdata/log/level"
+    "tests/log/level"
 )
 
 var (
-	// defaultLogger is the default logger used by the package-level functions.
-	defaultLogger = NewLogger(nil)
+    // defaultLogger is the default logger used by the package-level functions.
+    defaultLogger = NewLogger(nil)
 )
 
 func SetVerbose() {
-	defaultLogger.SetLevel(level.DebugLevel)
+    defaultLogger.SetLevel(level.DebugLevel)
 }
 
 func Debug(args ...any) {
-	defaultLogger.Debug(args...)
+    defaultLogger.Debug(args...)
 }
 
 func Debugf(format string, args ...any) {
-	defaultLogger.Debugf(format, args...)
+    defaultLogger.Debugf(format, args...)
 }
 
 func Warn(args ...any) {
-	defaultLogger.Warn(args...)
+    defaultLogger.Warn(args...)
 }
 
 func Warnf(format string, args ...any) {
-	defaultLogger.Warnf(format, args...)
+    defaultLogger.Warnf(format, args...)
 }
 
 func Error(args ...any) {
-	defaultLogger.Error(args...)
+    defaultLogger.Error(args...)
 }
 
+func Info(args ...any) {
+    defaultLogger.Info(args...)
+}
+func Infof(format string, args ...any) {
+    defaultLogger.Infof(format, args...)
+}
 func Errorf(format string, args ...any) {
-	defaultLogger.Errorf(format, args...)
+    defaultLogger.Errorf(format, args...)
 }
 
 func Fatal(args ...any) {
-	defaultLogger.Fatal(args...)
+    defaultLogger.Fatal(args...)
 }
 
 func Fatalf(format string, args ...any) {
-	defaultLogger.Fatalf(format, args...)
+    defaultLogger.Fatalf(format, args...)
 }

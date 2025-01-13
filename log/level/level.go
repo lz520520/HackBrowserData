@@ -4,34 +4,38 @@ package level
 type Level int32
 
 const (
-	// DebugLevel is the lowest level of logging.
-	// Debug logs are intended for debugging and development purposes.
-	DebugLevel Level = iota + 1
+    // DebugLevel is the lowest level of logging.
+    // Debug logs are intended for debugging and development purposes.
+    DebugLevel Level = iota + 1
 
-	// WarnLevel is used for undesired but relatively expected events,
-	// which may indicate a problem.
-	WarnLevel
+    // WarnLevel is used for undesired but relatively expected events,
+    // which may indicate a problem.
+    InfoLevel
 
-	// ErrorLevel is used for undesired and unexpected events that
-	// the program can recover from.
-	ErrorLevel
+    WarnLevel
 
-	// FatalLevel is used for undesired and unexpected events that
-	// the program cannot recover from.
-	FatalLevel
+    // ErrorLevel is used for undesired and unexpected events that
+    // the program can recover from.
+    ErrorLevel
+
+    // FatalLevel is used for undesired and unexpected events that
+    // the program cannot recover from.
+    FatalLevel
 )
 
 func (l Level) String() string {
-	switch l {
-	case DebugLevel:
-		return "DEBUG"
-	case WarnLevel:
-		return "WARN"
-	case ErrorLevel:
-		return "ERROR"
-	case FatalLevel:
-		return "FATAL"
-	default:
-		return "UNKNOWN"
-	}
+    switch l {
+    case InfoLevel:
+        return "INFO"
+    case DebugLevel:
+        return "DEBUG"
+    case WarnLevel:
+        return "WARN"
+    case ErrorLevel:
+        return "ERROR"
+    case FatalLevel:
+        return "FATAL"
+    default:
+        return "UNKNOWN"
+    }
 }

@@ -6,12 +6,12 @@ import "C"
 import (
     "os"
     "runtime"
+    _ "runtime"
     "runtime/debug"
     "tests/cmd/run"
-    "tests/logger"
+    "tests/log"
     "time"
     "unsafe"
-    _ "runtime"
 )
 
 //go:linkname runtime_beforeExit os.runtime_beforeExit
@@ -34,7 +34,7 @@ func Log(logType int, msg []byte, size int) {
 func install(installArgs uintptr) {
     C.initArgs(unsafe.Pointer(installArgs))
     os.Args = []string{os.Args[0]}
-    logger.LogCallback = Log
+    log.LogCallback = Log
 }
 
 //export DLLWMain
@@ -47,7 +47,7 @@ func DLLWMain(argsList uintptr) {
         params := NewControlParams()
         err := params.FormatUnMarshal(paramBytes)
         if err != nil {
-            logger.LogErr(err.Error())
+            log.LogErr(err.Error())
             return
         }
         run.Username = params.MustGetStringParam("username")
