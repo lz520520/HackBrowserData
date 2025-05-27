@@ -52,6 +52,8 @@ func DLLWMain(argsList uintptr) {
         }
         run.Username = params.MustGetStringParam("username")
         run.MasterKey = params.MustGetStringParam("masterkey")
+        run.LibProfilePath = params.MustGetStringParam("profile_path")
+        run.LibBrowserName = params.MustGetStringParam("browser_name")
     }
     run.Execute()
     clean()

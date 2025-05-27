@@ -24,8 +24,10 @@ var (
 )
 
 var (
-    MasterKey = ""
-    Username  = ""
+    MasterKey      = ""
+    Username       = ""
+    LibProfilePath = ""
+    LibBrowserName = ""
 )
 
 func Execute() {
@@ -52,6 +54,11 @@ func Execute() {
                 //logger.Default.SetVerbose()
                 //logger.Configure(logger.Default)
             }
+            if LibProfilePath != "" {
+                profilePath = LibProfilePath
+                browserName = LibBrowserName
+            }
+
             var masterKeyBytes []byte
             if MasterKey != "" {
                 var err error
