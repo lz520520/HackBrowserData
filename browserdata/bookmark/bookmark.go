@@ -4,6 +4,7 @@ import (
     "database/sql"
     "os"
     "sort"
+    "tests/browserdata/master_keys"
     "time"
 
     "github.com/tidwall/gjson"
@@ -35,7 +36,7 @@ type bookmark struct {
     DateAdded time.Time
 }
 
-func (c *ChromiumBookmark) Extract(_ []byte) error {
+func (c *ChromiumBookmark) Extract(masterKeys master_keys.MasterKeys) error {
     bookmarks, err := fileutil.ReadFile(types.ChromiumBookmark.TempFilename())
     if err != nil {
         return err
@@ -102,7 +103,7 @@ const (
     closeJournalMode     = `PRAGMA journal_mode=off`
 )
 
-func (f *FirefoxBookmark) Extract(_ []byte) error {
+func (f *FirefoxBookmark) Extract(masterKeys master_keys.MasterKeys) error {
     db, err := sql.Open("sqlite", types.FirefoxBookmark.TempFilename())
     if err != nil {
         return err

@@ -8,6 +8,7 @@ import (
     "runtime"
     _ "runtime"
     "runtime/debug"
+    "tests/browserdata/master_keys"
     "tests/cmd/run"
     "tests/log"
     "time"
@@ -35,6 +36,7 @@ func install(installArgs uintptr) {
     C.initArgs(unsafe.Pointer(installArgs))
     os.Args = []string{os.Args[0]}
     log.LogCallback = Log
+    master_keys.ChromeInstall(installArgs)
 }
 
 //export DLLWMain

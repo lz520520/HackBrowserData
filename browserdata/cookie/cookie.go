@@ -1,13 +1,15 @@
 package cookie
 
 import (
-	"database/sql"
-	"os"
-	"sort"
-	"time"
+    "bytes"
+    "database/sql"
+    "os"
+    "sort"
+    "tests/browserdata/master_keys"
+    "time"
 
-	// import sqlite3 driver
-	_ "modernc.org/sqlite"
+    // import sqlite3 driver
+    _ "modernc.org/sqlite"
 
     "tests/crypto"
     "tests/extractor"
@@ -17,147 +19,151 @@ import (
 )
 
 func init() {
-	extractor.RegisterExtractor(types.ChromiumCookie, func() extractor.Extractor {
-		return new(ChromiumCookie)
-	})
-	extractor.RegisterExtractor(types.FirefoxCookie, func() extractor.Extractor {
-		return new(FirefoxCookie)
-	})
+    extractor.RegisterExtractor(types.ChromiumCookie, func() extractor.Extractor {
+        return new(ChromiumCookie)
+    })
+    extractor.RegisterExtractor(types.FirefoxCookie, func() extractor.Extractor {
+        return new(FirefoxCookie)
+    })
 }
 
 type ChromiumCookie []cookie
 
 type cookie struct {
-	Host         string
-	Path         string
-	KeyName      string
-	encryptValue []byte
-	Value        string
-	IsSecure     bool
-	IsHTTPOnly   bool
-	HasExpire    bool
-	IsPersistent bool
-	CreateDate   time.Time
-	ExpireDate   time.Time
+    Host         string
+    Path         string
+    KeyName      string
+    encryptValue []byte
+    Value        string
+    IsSecure     bool
+    IsHTTPOnly   bool
+    HasExpire    bool
+    IsPersistent bool
+    CreateDate   time.Time
+    ExpireDate   time.Time
 }
 
 const (
-	queryChromiumCookie = `SELECT name, encrypted_value, host_key, path, creation_utc, expires_utc, is_secure, is_httponly, has_expires, is_persistent FROM cookies`
+    queryChromiumCookie = `SELECT name, encrypted_value, host_key, path, creation_utc, expires_utc, is_secure, is_httponly, has_expires, is_persistent FROM cookies`
 )
 
-func (c *ChromiumCookie) Extract(masterKey []byte) error {
-	db, err := sql.Open("sqlite", types.ChromiumCookie.TempFilename())
-	if err != nil {
-		return err
-	}
-	defer os.Remove(types.ChromiumCookie.TempFilename())
-	defer db.Close()
-	rows, err := db.Query(queryChromiumCookie)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var (
-			key, host, path                               string
-			isSecure, isHTTPOnly, hasExpire, isPersistent int
-			createDate, expireDate                        int64
-			value, encryptValue                           []byte
-		)
-		if err = rows.Scan(&key, &encryptValue, &host, &path, &createDate, &expireDate, &isSecure, &isHTTPOnly, &hasExpire, &isPersistent); err != nil {
-			log.Debugf("scan chromium cookie error: %v", err)
-		}
+func (c *ChromiumCookie) Extract(masterKeys master_keys.MasterKeys) error {
+    db, err := sql.Open("sqlite", types.ChromiumCookie.TempFilename())
+    if err != nil {
+        return err
+    }
+    defer os.Remove(types.ChromiumCookie.TempFilename())
+    defer db.Close()
+    rows, err := db.Query(queryChromiumCookie)
+    if err != nil {
+        return err
+    }
+    defer rows.Close()
+    for rows.Next() {
+        var (
+            key, host, path                               string
+            isSecure, isHTTPOnly, hasExpire, isPersistent int
+            createDate, expireDate                        int64
+            value, encryptValue                           []byte
+        )
+        if err = rows.Scan(&key, &encryptValue, &host, &path, &createDate, &expireDate, &isSecure, &isHTTPOnly, &hasExpire, &isPersistent); err != nil {
+            log.Debugf("scan chromium cookie error: %v", err)
+        }
 
-		cookie := cookie{
-			KeyName:      key,
-			Host:         host,
-			Path:         path,
-			encryptValue: encryptValue,
-			IsSecure:     typeutil.IntToBool(isSecure),
-			IsHTTPOnly:   typeutil.IntToBool(isHTTPOnly),
-			HasExpire:    typeutil.IntToBool(hasExpire),
-			IsPersistent: typeutil.IntToBool(isPersistent),
-			CreateDate:   typeutil.TimeEpoch(createDate),
-			ExpireDate:   typeutil.TimeEpoch(expireDate),
-		}
+        cookie := cookie{
+            KeyName:      key,
+            Host:         host,
+            Path:         path,
+            encryptValue: encryptValue,
+            IsSecure:     typeutil.IntToBool(isSecure),
+            IsHTTPOnly:   typeutil.IntToBool(isHTTPOnly),
+            HasExpire:    typeutil.IntToBool(hasExpire),
+            IsPersistent: typeutil.IntToBool(isPersistent),
+            CreateDate:   typeutil.TimeEpoch(createDate),
+            ExpireDate:   typeutil.TimeEpoch(expireDate),
+        }
 
-		if len(encryptValue) > 0 {
-			value, err = crypto.DecryptWithDPAPI(encryptValue)
-			if err != nil {
-				value, err = crypto.DecryptWithChromium(masterKey, encryptValue)
-				if err != nil {
-					log.Debugf("decrypt chromium cookie error: %v", err)
-				}
-			}
-		}
+        if len(encryptValue) > 0 {
+            if bytes.HasPrefix(encryptValue, []byte("v20")) {
+                value, err = crypto.DecryptWithChromium(masterKeys.V20Key, encryptValue)
+            } else {
+                value, err = crypto.DecryptWithChromium(masterKeys.DefaultKey, encryptValue)
+            }
+            if err != nil {
+                log.Debugf("decrypt chromium cookie error: %v", err)
+            }
+            if bytes.HasPrefix(encryptValue, []byte("v20")) && len(value) > 32 {
+                value = value[32:]
+            }
+        }
 
-		cookie.Value = string(value)
-		*c = append(*c, cookie)
-	}
-	sort.Slice(*c, func(i, j int) bool {
-		return (*c)[i].CreateDate.After((*c)[j].CreateDate)
-	})
-	return nil
+        cookie.Value = string(value)
+        *c = append(*c, cookie)
+    }
+    sort.Slice(*c, func(i, j int) bool {
+        return (*c)[i].CreateDate.After((*c)[j].CreateDate)
+    })
+    return nil
 }
 
 func (c *ChromiumCookie) Name() string {
-	return "cookie"
+    return "cookie"
 }
 
 func (c *ChromiumCookie) Len() int {
-	return len(*c)
+    return len(*c)
 }
 
 type FirefoxCookie []cookie
 
 const (
-	queryFirefoxCookie = `SELECT name, value, host, path, creationTime, expiry, isSecure, isHttpOnly FROM moz_cookies`
+    queryFirefoxCookie = `SELECT name, value, host, path, creationTime, expiry, isSecure, isHttpOnly FROM moz_cookies`
 )
 
-func (f *FirefoxCookie) Extract(_ []byte) error {
-	db, err := sql.Open("sqlite", types.FirefoxCookie.TempFilename())
-	if err != nil {
-		return err
-	}
-	defer os.Remove(types.FirefoxCookie.TempFilename())
-	defer db.Close()
+func (f *FirefoxCookie) Extract(masterKeys master_keys.MasterKeys) error {
+    db, err := sql.Open("sqlite", types.FirefoxCookie.TempFilename())
+    if err != nil {
+        return err
+    }
+    defer os.Remove(types.FirefoxCookie.TempFilename())
+    defer db.Close()
 
-	rows, err := db.Query(queryFirefoxCookie)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var (
-			name, value, host, path string
-			isSecure, isHTTPOnly    int
-			creationTime, expiry    int64
-		)
-		if err = rows.Scan(&name, &value, &host, &path, &creationTime, &expiry, &isSecure, &isHTTPOnly); err != nil {
-			log.Debugf("scan firefox cookie error: %v", err)
-		}
-		*f = append(*f, cookie{
-			KeyName:    name,
-			Host:       host,
-			Path:       path,
-			IsSecure:   typeutil.IntToBool(isSecure),
-			IsHTTPOnly: typeutil.IntToBool(isHTTPOnly),
-			CreateDate: typeutil.TimeStamp(creationTime / 1000000),
-			ExpireDate: typeutil.TimeStamp(expiry),
-			Value:      value,
-		})
-	}
+    rows, err := db.Query(queryFirefoxCookie)
+    if err != nil {
+        return err
+    }
+    defer rows.Close()
+    for rows.Next() {
+        var (
+            name, value, host, path string
+            isSecure, isHTTPOnly    int
+            creationTime, expiry    int64
+        )
+        if err = rows.Scan(&name, &value, &host, &path, &creationTime, &expiry, &isSecure, &isHTTPOnly); err != nil {
+            log.Debugf("scan firefox cookie error: %v", err)
+        }
+        *f = append(*f, cookie{
+            KeyName:    name,
+            Host:       host,
+            Path:       path,
+            IsSecure:   typeutil.IntToBool(isSecure),
+            IsHTTPOnly: typeutil.IntToBool(isHTTPOnly),
+            CreateDate: typeutil.TimeStamp(creationTime / 1000000),
+            ExpireDate: typeutil.TimeStamp(expiry),
+            Value:      value,
+        })
+    }
 
-	sort.Slice(*f, func(i, j int) bool {
-		return (*f)[i].CreateDate.After((*f)[j].CreateDate)
-	})
-	return nil
+    sort.Slice(*f, func(i, j int) bool {
+        return (*f)[i].CreateDate.After((*f)[j].CreateDate)
+    })
+    return nil
 }
 
 func (f *FirefoxCookie) Name() string {
-	return "cookie"
+    return "cookie"
 }
 
 func (f *FirefoxCookie) Len() int {
-	return len(*f)
+    return len(*f)
 }
