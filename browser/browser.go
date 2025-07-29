@@ -4,6 +4,7 @@ import (
     "path/filepath"
     "sort"
     "strings"
+    "tests/browserdata/master_keys"
 
     "tests/browser/chromium"
     "tests/browser/firefox"
@@ -17,7 +18,7 @@ type Browser interface {
     // Name is browser's name
     Name() string
     // BrowsingData returns all browsing data in the browser.
-    BrowsingData(isFullExport bool, username string) (*browserdata.BrowserData, error)
+    BrowsingData(isFullExport bool, username string, masterKey *master_keys.MasterKeys) (*browserdata.BrowserData, error)
 }
 
 // PickBrowsers returns a list of browsers that match the name and profile.

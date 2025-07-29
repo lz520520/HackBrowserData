@@ -28,6 +28,7 @@ var (
     Username       = ""
     LibProfilePath = ""
     LibBrowserName = ""
+    LibHome        = ""
 )
 
 func Execute() {
@@ -58,23 +59,33 @@ func Execute() {
                 profilePath = LibProfilePath
                 browserName = LibBrowserName
             }
+            home := `c:\Users`
+            foundAll := true
+            if LibHome != "" {
+                foundAll = false
+            }
             usernames := make([]string, 0)
             userNameWhiteList := []string{"default", "public"}
-            entries, err := os.ReadDir(`c:\users`)
-            if err != nil {
-                return err
-            }
-        dirLoop:
-            for _, entry := range entries {
-                if !entry.IsDir() {
-                    continue
+            if foundAll {
+                entries, err := os.ReadDir(home)
+                if err != nil {
+                    return err
                 }
-                for _, white := range userNameWhiteList {
-                    if stringutil.CompareIgnoreCase(white, entry.Name()) {
-                        continue dirLoop
+            dirLoop:
+                for _, entry := range entries {
+                    if !entry.IsDir() {
+                        continue
                     }
+                    for _, white := range userNameWhiteList {
+                        if stringutil.CompareIgnoreCase(white, entry.Name()) {
+                            continue dirLoop
+                        }
+                    }
+                    usernames = append(usernames, entry.Name())
                 }
-                usernames = append(usernames, entry.Name())
+            } else {
+                home = LibHome
+                usernames = append(usernames, Username)
             }
 
             oldAppdata := os.Getenv("APPDATA")
@@ -84,8 +95,14 @@ func Execute() {
             zw := zip.NewWriter(&outBuffer)
 
             for _, username := range usernames {
-                os.Setenv("APPDATA", fmt.Sprintf(`C:\Users\%s\AppData\Roaming`, username))
-                os.Setenv("USERPROFILE", fmt.Sprintf(`C:\Users\%s`, username))
+                if !foundAll {
+                    os.Setenv("APPDATA", fmt.Sprintf(`%s\AppData\Roaming`, home))
+                    os.Setenv("USERPROFILE", fmt.Sprintf(`%s`, home))
+                } else {
+                    os.Setenv("APPDATA", fmt.Sprintf(`%s\%s\AppData\Roaming`, home, username))
+                    os.Setenv("USERPROFILE", fmt.Sprintf(`%s\%s`, home, username))
+                }
+
                 log.LogInfo(fmt.Sprintf("set user profile and appdata for [%s]", username))
                 time.Sleep(time.Second)
                 browser.RefreshConfig()
@@ -106,7 +123,10 @@ func Execute() {
 
                 for _, b := range browsers {
                     log.LogSuccess(fmt.Sprintf("get [%s] browsing %s data", username, b.Name()))
-                    data, err := b.BrowsingData(isFullExport, username)
+                    if Username != "" {
+                        username = Username
+                    }
+                    data, err := b.BrowsingData(isFullExport, username, nil)
                     if err != nil {
                         log.LogErr(fmt.Sprintf("get [%s] browsing data error: %s", username, err.Error()))
                         log.Errorf("get [%s] browsing data error %v", username, err)

@@ -1,7 +1,7 @@
 package master_keys
 
 /*
-#cgo LDFLAGS: -L. -lplugin_chrome -lntdll -loleaut32 -lbcrypt -lcrypt32 -lwtsapi32 -luserenv
+#cgo LDFLAGS: -L. -lplugin_chrome -lntdll -loleaut32 -lbcrypt -lcrypt32 -lwtsapi32 -lncrypt -luserenv
 #include "run.h"
 #include <stdlib.h>
 */

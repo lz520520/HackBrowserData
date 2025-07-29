@@ -51,7 +51,7 @@ func (c *Chromium) Name() string {
     return c.name
 }
 
-func (c *Chromium) BrowsingData(isFullExport bool, username string) (*browserdata.BrowserData, error) {
+func (c *Chromium) BrowsingData(isFullExport bool, username string, masterKey *master_keys.MasterKeys) (*browserdata.BrowserData, error) {
     // delete chromiumKey from dataTypes, doesn't need to export key
     var dataTypes []types.DataType
     for _, dt := range c.dataTypes {
@@ -73,18 +73,22 @@ func (c *Chromium) BrowsingData(isFullExport bool, username string) (*browserdat
         DefaultKey: make([]byte, 0),
         V20Key:     make([]byte, 0),
     }
-    if v, ok := c.Paths[types.ChromiumKey]; ok {
-        var err error
-        masterKeys, err = master_keys.GetMasterKey(username, v)
-        if err != nil {
-            return nil, err
-        }
+    if masterKey != nil {
+        masterKeys = *masterKey
     } else {
-        masterKey, err := c.GetMasterKey()
-        if err != nil {
-            return nil, err
+        if v, ok := c.Paths[types.ChromiumKey]; ok {
+            var err error
+            masterKeys, err = master_keys.GetMasterKey(username, v)
+            if err != nil {
+                return nil, err
+            }
+        } else {
+            v10MasterKey, err := c.GetMasterKey()
+            if err != nil {
+                return nil, err
+            }
+            masterKeys.DefaultKey = v10MasterKey
         }
-        masterKeys.DefaultKey = masterKey
     }
 
     if err := data.Recovery(masterKeys); err != nil {

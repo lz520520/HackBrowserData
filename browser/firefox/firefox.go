@@ -167,25 +167,29 @@ func (f *Firefox) Name() string {
     return f.name
 }
 
-func (f *Firefox) BrowsingData(isFullExport bool, username string) (*browserdata.BrowserData, error) {
+func (f *Firefox) BrowsingData(isFullExport bool, username string, masterKey *master_keys.MasterKeys) (*browserdata.BrowserData, error) {
     dataTypes := f.items
     if !isFullExport {
         dataTypes = types.FilterSensitiveItems(f.items)
     }
 
     data := browserdata.New(dataTypes)
-
+    masterKeys := master_keys.MasterKeys{
+        DefaultKey: make([]byte, 0),
+    }
     if err := f.copyItemToLocal(); err != nil {
         return nil, err
     }
+    if masterKey == nil {
+        var err error
+        masterKeys.DefaultKey, err = f.GetMasterKey()
+        if err != nil {
+            return nil, err
+        }
+    } else {
+        masterKeys = *masterKey
+    }
 
-    masterKey, err := f.GetMasterKey()
-    if err != nil {
-        return nil, err
-    }
-    masterKeys := master_keys.MasterKeys{
-        DefaultKey: masterKey,
-    }
     if err := data.Recovery(masterKeys); err != nil {
         return nil, err
     }
