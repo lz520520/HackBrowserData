@@ -1,7 +1,7 @@
 
 
 exe:
-	CGO_ENABLED=0 GOARCH=amd64 go build -trimpath -v  -ldflags="-s -w"  -o ./out/data_amd64.exe  ./cmd/bin/
+	CGO_ENABLED=1 GOARCH=amd64 go build -trimpath -v  -ldflags="-s -w"  -o ./out/data_amd64.exe  ./cmd/local/
 
 dll:
 	dlltool.exe  --output-exp ./cmd/lib/dllmain.exp --input-def ./cmd/lib/dllmain.def

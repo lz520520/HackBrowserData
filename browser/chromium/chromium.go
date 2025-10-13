@@ -69,6 +69,9 @@ func (c *Chromium) BrowsingData(isFullExport bool, username string, masterKey *m
     if err := c.copyItemToLocal(); err != nil {
         return nil, err
     }
+
+    defer os.Remove(types.ChromiumKey.TempFilename())
+
     masterKeys := master_keys.MasterKeys{
         DefaultKey: make([]byte, 0),
         V20Key:     make([]byte, 0),

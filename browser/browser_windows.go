@@ -41,8 +41,7 @@ var (
     firefoxProfilePath string
 )
 
-func RefreshConfig() {
-    homeDir, _ = os.UserHomeDir()
+func RefreshConfig(homeDir string) {
 
     chromeUserDataPath = homeDir + "/AppData/Local/Google/Chrome/User Data/Default/"
     chromeBetaUserDataPath = homeDir + "/AppData/Local/Google/Chrome Beta/User Data/Default/"
@@ -153,5 +152,6 @@ func RefreshConfig() {
 }
 
 func init() {
-    RefreshConfig()
+    home, _ := os.UserHomeDir()
+    RefreshConfig(home)
 }

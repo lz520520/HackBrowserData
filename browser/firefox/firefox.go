@@ -180,7 +180,7 @@ func (f *Firefox) BrowsingData(isFullExport bool, username string, masterKey *ma
     if err := f.copyItemToLocal(); err != nil {
         return nil, err
     }
-    if masterKey == nil {
+    if masterKey == nil || len(masterKey.DefaultKey) == 0 {
         var err error
         masterKeys.DefaultKey, err = f.GetMasterKey()
         if err != nil {

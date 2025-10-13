@@ -4,13 +4,14 @@ import (
     "archive/zip"
     "bytes"
     "fmt"
-    "github.com/urfave/cli/v2"
     "os"
     "tests/browser"
     "tests/log"
     "tests/utils/fileutil"
     "tests/utils/stringutil"
     "time"
+
+    "github.com/urfave/cli/v2"
 )
 
 var (
@@ -105,7 +106,8 @@ func Execute() {
 
                 log.LogInfo(fmt.Sprintf("set user profile and appdata for [%s]", username))
                 time.Sleep(time.Second)
-                browser.RefreshConfig()
+                home2, _ := os.UserHomeDir()
+                browser.RefreshConfig(home2)
 
                 //if stringutil.CompareIgnoreCase(username, "administrator") && Username != ""{
                 //    username
