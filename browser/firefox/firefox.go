@@ -186,6 +186,7 @@ func (f *Firefox) BrowsingData(isFullExport bool, username string, masterKey *ma
         if err != nil {
             return nil, err
         }
+
     } else {
         masterKeys = *masterKey
     }

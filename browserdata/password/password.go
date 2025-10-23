@@ -201,9 +201,6 @@ func (f *FirefoxPassword) Extract(masterKeys master_keys.MasterKeys) error {
             return err
         }
         user, err := userPBE.Decrypt(masterKeys.DefaultKey)
-        if err != nil {
-            return err
-        }
         pwd, err := pwdPBE.Decrypt(masterKeys.DefaultKey)
         if err != nil {
             return err
