@@ -45,6 +45,16 @@ func isWhiteChar(r rune) bool {
     return white
 }
 
+func HasInvisibleChar(s string) bool {
+    for _, r := range s {
+        // 如果不是可打印字符且不是常见的换行/制表符等，则认为是不可见字符
+        if !unicode.IsPrint(r) && r != '\n' && r != '\r' && r != '\t' {
+            return true
+        }
+    }
+    return false
+}
+
 func InsertChar(str, char string) string {
     // 使用 strings.Builder 创建一个可变的字符串
     var builder strings.Builder

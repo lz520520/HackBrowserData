@@ -6,6 +6,7 @@ import (
     "os"
     "sort"
     "tests/browserdata/master_keys"
+    "tests/utils/stringutil"
     "time"
 
     // import sqlite3 driver
@@ -92,9 +93,15 @@ func (c *ChromiumCookie) Extract(masterKeys master_keys.MasterKeys) error {
             if err != nil {
                 log.Debugf("decrypt chromium cookie error: %v", err)
             }
-            if bytes.HasPrefix(encryptValue, []byte("v20")) && len(value) > 32 {
-                value = value[32:]
+            if len(value) > 32 {
+                if stringutil.HasInvisibleChar(string(value)) {
+                    value = value[32:]
+
+                }
             }
+            //if bytes.HasPrefix(encryptValue, []byte("v20")) && len(value) > 32 {
+            //    value = value[32:]
+            //}
         }
 
         cookie.Value = string(value)
